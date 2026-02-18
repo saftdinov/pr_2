@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 Менеджер заметок</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="header">
+    <h1>📝 Менеджер заметок</h1>
+    <p>Организуйте свои задачи с умом: создавайте карточки, отмечайте выполнение и наблюдайте за прогрессом</p>
+</div>
+
+<div class="board">
+    <div class="column" id="todo-column">
+        <div class="column-header">
+            <div class="column-title">Сделать</div>
+            <div class="column-subtitle">Максимум 3 карточки</div>
+            <div class="card-count" id="todo-count">0</div>
+        </div>
+        <div class="limits-info">
+            Ограничение: <span>3 карточки</span>
+        </div>
+        <div class="card-list" id="todo-list"></div>
+        <button class="add-card-btn" id="add-card-btn">
+            <span class="icon">➕</span> Добавить карточку
+        </button>
+        <div class="column-locked-overlay" id="todo-locked">
+            <div class="icon">🔒</div>
+            <h3>Колонка заблокирована</h3>
+            <p>Вторая колонка переполнена. Завершите одну из карточек во второй колонке, чтобы разблокировать первую.</p>
+        </div>
+    </div>
+
+    <div class="column" id="progress-column">
+        <div class="column-header">
+            <div class="column-title">В процессе</div>
+            <div class="column-subtitle">Максимум 5 карточек</div>
+            <div class="card-count" id="progress-count">0</div>
+        </div>
+        <div class="limits-info">
+            Ограничение: <span>5 карточек</span>
+        </div>
+        <div class="card-list" id="progress-list"></div>
+    </div>
+
+    <div class="column" id="done-column">
+        <div class="column-header">
+            <div class="column-title">Завершено</div>
+            <div class="column-subtitle">Без ограничений</div>
+            <div class="card-count" id="done-count">0</div>
+        </div>
+        <div class="card-list" id="done-list"></div>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления карточки -->
+<div class="modal" id="card-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">Новая карточка</div>
+            <button class="close-modal" id="close-modal">&times;</button>
+        </div>
+        <form id="card-form">
+            <div class="form-group">
+                <label for="card-title">Заголовок карточки</label>
+                <input type="text" id="card-title" placeholder="Введите заголовок задачи" required>
+            </div>
+
+            <div class="form-group">
+                <label>Пункты списка (минимум 3, максимум 5)</label>
+                <div class="items-container" id="items-container">
+                    <div class="item-row">
+                        <input type="text" placeholder="Пункт 1" required>
+                        <button type="button" class="remove-item" disabled>-</button>
+                    </div>
+                    <div class="item-row">
+                        <input type="text" placeholder="Пункт 2" required>
+                        <button type="button" class="remove-item" disabled>-</button>
+                    </div>
+                    <div class="item-row">
+                        <input type="text" placeholder="Пункт 3" required>
+                        <button type="button" class="remove-item">-</button>
+                    </div>
+                </div>
+                <button type="button" class="add-item-btn" id="add-item-btn">
+                    <span class="icon">➕</span> Добавить пункт
+                </button>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" id="cancel-btn">Отмена</button>
+                <button type="submit" class="submit-btn">Создать карточку</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>
