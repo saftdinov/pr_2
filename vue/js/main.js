@@ -1,237 +1,225 @@
-// Данные приложения
 let kolonki = {
-    sdelat: [],
-    vprocesse: [],
-    gotovo: []
+    col1: [],
+    col2: [],
+    col3: []
 };
+
 let zablokirovano = false;
 
-// Элементы страницы
-const spiski = {
-    sdelat: document.getElementById('todo-list'),
-    vprocesse: document.getElementById('progress-list'),
-    gotovo: document.getElementById('done-list')
-};
-
-const schetchiki = {
-    sdelat: document.getElementById('todo-count'),
-    vprocesse: document.getElementById('progress-count'),
-    gotovo: document.getElementById('done-count')
-};
-
-const knopkaDobavit = document.getElementById('add-card-btn');
-const modalnoeOkno = document.getElementById('card-modal');
-const forma = document.getElementById('card-form');
-const poleZagolovka = document.getElementById('card-title');
-const konteinerPunktov = document.getElementById('items-container');
-const knopkaPunkt = document.getElementById('add-item-btn');
-const knopkaZakrit = document.getElementById('close-modal');
-const knopkaOtmena = document.getElementById('cancel-btn');
-const perekritie = document.getElementById('todo-locked');
-
-// Загружаем данные при старте
 zagruzit();
 
-// Обработчики кнопок
-knopkaDobavit.onclick = function() {
-    if (!zablokirovano && kolonki.sdelat.length < 3) {
-        poleZagolovka.value = '';
-        konteinerPunktov.innerHTML = '<input type="text" placeholder="1" required><input type="text" placeholder="2" required><input type="text" placeholder="3" required>';
-        modalnoeOkno.style.display = 'flex';
+function addCard() {
+    if (zablokirovano || kolonki.col1.length >= 3) {
+        return;
     }
-};
 
-knopkaZakrit.onclick = knopkaOtmena.onclick = function() {
-    modalnoeOkno.style.display = 'none';
-};
+    document.getElementById('editId').value = '';
+    document.getElementById('title').value = '';
+    document.getElementById('items').innerHTML = `
+        <input type="text" placeholder="1" required>
+        <input type="text" placeholder="2" required>
+        <input type="text" placeholder="3" required>
+    `;
+    document.getElementById('modal').style.display = 'flex';
+}
 
-knopkaPunkt.onclick = function() {
-    if (konteinerPunktov.children.length < 5) {
+function addItem() {
+    let container = document.getElementById('items');
+    if (container.children.length < 5) {
         let input = document.createElement('input');
         input.type = 'text';
-        input.placeholder = konteinerPunktov.children.length + 1;
+        input.placeholder = container.children.length + 1;
         input.required = true;
-        konteinerPunktov.appendChild(input);
+        container.appendChild(input);
     }
-};
+}
 
-// Создание новой карточки
-forma.onsubmit = function(e) {
-    e.preventDefault();
-    let zagolovok = poleZagolovka.value.trim();
-    let vseInput = konteinerPunktov.querySelectorAll('input');
-    let punkti = Array.from(vseInput).map(i => i.value.trim()).filter(v => v);
+function saveCard() {
+    let title = document.getElementById('title').value.trim();
+    let inputs = document.getElementById('items').querySelectorAll('input');
+    let items = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
 
-    if (puknti.length < 3) {
+    if (items.length < 3) {
         alert('Нужно минимум 3 пункта!');
         return;
     }
 
-    kolonki.sdelat.push({
+    if (items.length > 5) {
+        alert('Максимум 5 пунктов!');
+        return;
+    }
+
+    kolonki.col1.push({
         id: Date.now(),
-        zagolovok: zagolovok,
-        punkti: punkti.map(p => ({ text: p, gotovo: false })),
-        dataZaversheniya: null
+        title: title,
+        items: items.map(i => ({ text: i, done: false })),
+        lastDone: null
     });
 
     sohranit();
-    pokazatKartochki();
-    obnovitSchetchiki();
-    modalnoeOkno.style.display = 'none';
-};
+    pokazat();
+    closeModal();
+}
 
-// Обработка чекбокса
-function obrabotatChek(id, index, vklucheno) {
-    let kartochka = null;
-    let kolonka = null;
+function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+}
 
-    for (let k in kolonki) {
-        let idx = kolonki[k].findIndex(x => x.id === id);
-        if (idx !== -1) {
-            kartochka = kolonki[k][idx];
-            kolonka = k;
+function checkItem(id, idx, checked) {
+    let card = null;
+    let col = null;
+
+    for (let c in kolonki) {
+        let i = kolonki[c].findIndex(x => x.id == id);
+        if (i !== -1) {
+            card = kolonki[c][i];
+            col = c;
             break;
         }
     }
 
-    if (!kartochka) return;
+    if (!card) return;
 
-    kartochka.punkti[index].gotovo = vklucheno;
+    card.items[idx].done = checked;
+    card.lastDone = new Date().toISOString();
 
-    let gotovo = kartochka.punkti.filter(p => p.gotovo).length;
-    let vsego = kartochka.punkti.length;
-    let procent = Math.round((gotovo / vsego) * 100);
+    let doneCount = card.items.filter(i => i.done).length;
+    let percent = Math.round((doneCount / card.items.length) * 100);
 
-    if (kolonka === 'sdelat' && procent > 50) {
-        if (kolonki.vprocesse.length < 5) {
-            peremestit('vprocesse', id);
+    if (col === 'col1' && percent > 50) {
+        if (kolonki.col2.length < 5) {
+            moveCard(id, 'col1', 'col2');
         } else {
-            kartochka.punkti[index].gotovo = !vklucheno;
+            card.items[idx].done = !checked;
+            card.lastDone = null;
             zablokirovat();
         }
     }
 
-    if (kolonka === 'vprocesse' && procent === 100) {
-        peremestit('gotovo', id);
-        kartochka.dataZaversheniya = new Date().toLocaleString();
+    if (col === 'col2' && percent === 100) {
+        moveCard(id, 'col2', 'col3');
         razblokirovat();
     }
 
     sohranit();
-    pokazatKartochki();
-    obnovitSchetchiki();
+    pokazat();
 }
 
-// Переместить карточку
-function peremestit(vKolonku, id) {
-    let kartochka = null;
-    for (let k in kolonki) {
-        let idx = kolonki[k].findIndex(x => x.id === id);
-        if (idx !== -1) {
-            kartochka = kolonki[k][idx];
-            kolonki[k].splice(idx, 1);
-            break;
-        }
-    }
-    if (kartochka) kolonki[vKolonku].push(kartochka);
+function moveCard(id, from, to) {
+    let idx = kolonki[from].findIndex(c => c.id == id);
+    if (idx === -1) return;
+
+    let card = kolonki[from][idx];
+    kolonki[from].splice(idx, 1);
+    kolonki[to].push(card);
 }
 
-// Блокировка колонки
 function zablokirovat() {
     zablokirovano = true;
-    perekritie.style.display = 'flex';
-    knopkaDobavit.disabled = true;
+    document.getElementById('locked').style.display = 'flex';
     sohranit();
+    pokazat();
 }
 
 function razblokirovat() {
-    if (kolonki.vprocesse.length < 5) {
+    if (kolonki.col2.length < 5) {
         zablokirovano = false;
-        perekritie.style.display = 'none';
-        knopkaDobavit.disabled = false;
+        document.getElementById('locked').style.display = 'none';
         sohranit();
+        pokazat();
     }
 }
 
-// Показать все карточки
-function pokazatKartochki() {
-    spiski.sdelat.innerHTML = '';
-    spiski.vprocesse.innerHTML = '';
-    spiski.gotovo.innerHTML = '';
+function pokazat() {
+    document.getElementById('col1').innerHTML = '';
+    document.getElementById('col2').innerHTML = '';
+    document.getElementById('col3').innerHTML = '';
 
-    kolonki.sdelat.forEach(k => narisovatKartochku(k, 'sdelat'));
-    kolonki.vprocesse.forEach(k => narisovatKartochku(k, 'vprocesse'));
-    kolonki.gotovo.forEach(k => narisovatKartochku(k, 'gotovo'));
-}
+    document.getElementById('count1').textContent = `${kolonki.col1.length}/3`;
+    document.getElementById('count2').textContent = `${kolonki.col2.length}/5`;
+    document.getElementById('count3').textContent = `${kolonki.col3.length}`;
 
-function narisovatKartochku(kartochka, kolonka) {
-    let div = document.createElement('div');
-    div.className = 'card';
-    div.innerHTML = `
-        <div class="card-title">${kartochka.zagolovok}</div>
-        <ul class="card-items">
-            ${kartochka.punkti.map((p, i) => `
-                <li class="card-item">
-                    <input type="checkbox" data-id="${kartochka.id}" data-idx="${i}" ${p.gotovo ? 'checked' : ''}>
-                    <label>${p.text}</label>
-                </li>
+    kolonki.col1.forEach(c => {
+        let div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+            <strong>${c.title}</strong>
+            ${c.items.map((i, idx) => `
+                <div class="card-item">
+                    <input type="checkbox" onchange="checkItem(${c.id}, ${idx}, this.checked)" ${i.done ? 'checked' : ''}>
+                    <label>${i.text}</label>
+                </div>
             `).join('')}
-        </ul>
-        ${kolonka === 'gotovo' && kartochka.dataZaversheniya ? `<div class="completion-date">Завершено: ${kartochka.dataZaversheniya}</div>` : ''}
-    `;
-
-    spiski[kolonka].appendChild(div);
-
-    div.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.onchange = function(e) {
-            let id = parseInt(e.target.dataset.id);
-            let idx = parseInt(e.target.dataset.idx);
-            obrabotatChek(id, idx, e.target.checked);
-        };
+        `;
+        document.getElementById('col1').appendChild(div);
     });
-}
 
-// Обновить счетчики
-function obnovitSchetchiki() {
-    schetchiki.sdelat.textContent = `${kolonki.sdelat.length}/3`;
-    schetchiki.vprocesse.textContent = `${kolonki.vprocesse.length}/5`;
-    schetchiki.gotovo.textContent = `${kolonki.gotovo.length}`;
+    kolonki.col2.forEach(c => {
+        let div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+            <strong>${c.title}</strong>
+            ${c.items.map((i, idx) => `
+                <div class="card-item">
+                    <input type="checkbox" onchange="checkItem(${c.id}, ${idx}, this.checked)" ${i.done ? 'checked' : ''}>
+                    <label>${i.text}</label>
+                </div>
+            `).join('')}
+        `;
+        document.getElementById('col2').appendChild(div);
+    });
 
-    if (kolonki.sdelat.length >= 3 || zablokirovano) {
-        knopkaDobavit.disabled = true;
+    kolonki.col3.forEach(c => {
+        let div = document.createElement('div');
+        div.className = 'card';
+        let dateStr = c.lastDone ? new Date(c.lastDone).toLocaleString('ru-RU') : '';
+        div.innerHTML = `
+            <strong>${c.title}</strong>
+            ${c.items.map(i => `
+                <div class="card-item">
+                    <input type="checkbox" checked disabled>
+                    <label>${i.text}</label>
+                </div>
+            `).join('')}
+            ${dateStr ? `<div class="completion-date">Завершено: ${dateStr}</div>` : ''}
+        `;
+        document.getElementById('col3').appendChild(div);
+    });
+
+    let btn = document.querySelector('button[onclick="addCard()"]');
+    if (kolonki.col1.length >= 3 || zablokirovano) {
+        btn.disabled = true;
     } else {
-        knopkaDobavit.disabled = false;
+        btn.disabled = false;
     }
 }
 
-// Сохранение в память браузера
 function sohranit() {
-    localStorage.setItem('zametki', JSON.stringify({ kolonki, zablokirovano }));
+    localStorage.setItem('notes', JSON.stringify({ kolonki, zablokirovano }));
 }
 
 function zagruzit() {
-    let sohranennie = localStorage.getItem('zametki');
-    if (sohranennie) {
-        let dannie = JSON.parse(sohranennie);
-        kolonki = dannie.kolonki || { sdelat: [], vprocesse: [], gotovo: [] };
-        zablokirovano = dannie.zablokirovano || false;
+    let saved = localStorage.getItem('notes');
+    if (saved) {
+        let data = JSON.parse(saved);
+        kolonki = data.kolonki || { col1: [], col2: [], col3: [] };
+        zablokirovano = data.zablokirovano || false;
     }
-    pokazatKartochki();
-    obnovitSchetchiki();
-    proveritBlokirovku();
-}
+    pokazat();
 
-function proveritBlokirovku() {
-    if (kolonki.vprocesse.length >= 5) {
-        let estLi = kolonki.sdelat.some(k => {
-            let gotovo = k.punkti.filter(p => p.gotovo).length;
-            return (gotovo / k.punkti.length) > 0.5;
+    if (kolonki.col2.length >= 5) {
+        let hasOver50 = kolonki.col1.some(c => {
+            let done = c.items.filter(i => i.done).length;
+            return (done / c.items.length) > 0.5;
         });
-        if (estLi) zablokirovat();
+        if (hasOver50) {
+            zablokirovat();
+        }
     }
 }
 
-// Закрыть модальное окно при клике вне его
 window.onclick = function(e) {
-    if (e.target === modalnoeOkno) modalnoeOkno.style.display = 'none';
+    if (e.target.id === 'modal') {
+        closeModal();
+    }
 };
